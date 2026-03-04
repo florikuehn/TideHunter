@@ -272,7 +272,7 @@ void get_medoid_period(dp_t **dp, chain_t *ch) {
         last_p = t[i].x;
         pp = get_period_penalty(t[i].x, t, ch->len) + get_adj_dis_penalty(dp, ch, t[i].z) * ch->len;
 #ifdef __DEBUG__
-        printf("p: %d, penalty: %lld\n", t[i].x, pp);
+        fprintf(stderr, "p: %d, penalty: %lld\n", t[i].x, pp);
 #endif
         if (pp < min_pp) {
             ch->est_period = t[i].x; ch->est_start = t[i].y; ch->est_ch_i = t[i].z;
@@ -281,7 +281,7 @@ void get_medoid_period(dp_t **dp, chain_t *ch) {
     }
     free(t);
 #ifdef __DEBUG__
-    printf("Est_P: %d, %d, %d\n", ch->est_ch_i, ch->est_period, ch->est_start);
+    fprintf(stderr, "Est_P: %d, %d, %d\n", ch->est_ch_i, ch->est_period, ch->est_start);
 #endif
 }
 
@@ -372,7 +372,7 @@ UPDATE:
         sort_chain(dp, chain, chain_idx, ch_n);
     }
 #ifdef __DEBUG__
-    printf("ch_n: %d\n", ch_n);
+    fprintf(stderr, "ch_n: %d\n", ch_n);
     int _i;
     chain_t *ch = chain;
     for (_i = 0; _i < ch_n; ++_i) {
@@ -381,9 +381,9 @@ UPDATE:
             int start_i = ch[i].cell[0].i, start_j = ch[i].cell[0].j, end_i = ch[i].cell[ch[i].len-1].i, end_j = ch[i].cell[ch[i].len-1].j;
             int from_i = dp[start_i][start_j].from_i, from_j = dp[start_i][start_j].from_j;
             j = 0;
-            printf("\tchain: %d(%d): start: %d, end: %d, p: %d, score: %d\n", j+1, ch[i].cell[j].i, dp[ch[i].cell[j].i][ch[i].cell[j].j].start, dp[ch[i].cell[j].i][ch[i].cell[j].j].end, dp[ch[i].cell[j].i][ch[i].cell[j].j].end-dp[ch[i].cell[j].i][ch[i].cell[j].j].start, dp[ch[i].cell[j].i][ch[i].cell[j].j].score);
+            fprintf(stderr, "\tchain: %d(%d): start: %d, end: %d, p: %d, score: %d\n", j+1, ch[i].cell[j].i, dp[ch[i].cell[j].i][ch[i].cell[j].j].start, dp[ch[i].cell[j].i][ch[i].cell[j].j].end, dp[ch[i].cell[j].i][ch[i].cell[j].j].end-dp[ch[i].cell[j].i][ch[i].cell[j].j].start, dp[ch[i].cell[j].i][ch[i].cell[j].j].score);
             for (j = 1; j < ch[i].len; ++j) {
-                printf("\tchain: %d(%d): start: %d, end: %d, p: %d, score: %d, delta: %d\n", j+1, ch[i].cell[j].i, dp[ch[i].cell[j].i][ch[i].cell[j].j].start, dp[ch[i].cell[j].i][ch[i].cell[j].j].end, dp[ch[i].cell[j].i][ch[i].cell[j].j].end-dp[ch[i].cell[j].i][ch[i].cell[j].j].start, dp[ch[i].cell[j].i][ch[i].cell[j].j].score, dp[ch[i].cell[j].i][ch[i].cell[j].j].start- dp[ch[i].cell[j-1].i][ch[i].cell[j-1].j].start);
+                fprintf(stderr, "\tchain: %d(%d): start: %d, end: %d, p: %d, score: %d, delta: %d\n", j+1, ch[i].cell[j].i, dp[ch[i].cell[j].i][ch[i].cell[j].j].start, dp[ch[i].cell[j].i][ch[i].cell[j].j].end, dp[ch[i].cell[j].i][ch[i].cell[j].j].end-dp[ch[i].cell[j].i][ch[i].cell[j].j].start, dp[ch[i].cell[j].i][ch[i].cell[j].j].score, dp[ch[i].cell[j].i][ch[i].cell[j].j].start- dp[ch[i].cell[j-1].i][ch[i].cell[j-1].j].start);
             }
         }
     }

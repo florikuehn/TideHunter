@@ -8,6 +8,7 @@ KSEQ_INIT(gzFile, gzread)
 
 #define THREAD_N 4
 #define CHUNK_READ_N 4096 // 1
+#define BATCH_LEN 1000000 // 1M/500K; search for repeats in each 1M/500K-bp batch
 
 #define KMER_SIZE 8  // kmer length
 #define MAX_KMER_SIZE 16 // uint32_t

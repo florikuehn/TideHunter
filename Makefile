@@ -1,5 +1,5 @@
 #CC      =   gcc
-CFLAGS  =	-std=gnu99 -Wall -O3 -Wno-unused-variable -Wno-unused-function -Wno-misleading-indentation -DUSE_SIMDE -DSIMDE_ENABLE_NATIVE_ALIASES
+CFLAGS  =	-Wall -O3 -Wno-unused-variable -Wno-unused-function -Wno-misleading-indentation -DUSE_SIMDE -DSIMDE_ENABLE_NATIVE_ALIASES
 
 # for debug
 ifneq ($(debug),)
@@ -8,7 +8,7 @@ endif
 
 # for gdb
 ifneq ($(gdb),)
-	CFLAGS   = -g -Wall ${DFLAGS}
+	CFLAGS   = -g -Wall -O0 -Wno-unused-variable -Wno-unused-function -Wno-misleading-indentation -DUSE_SIMDE -DSIMDE_ENABLE_NATIVE_ALIASES ${DFLAGS}
 else
 	CFLAGS   += ${DFLAGS}
 endif
@@ -132,11 +132,8 @@ $(ABPOALIB):
 
 
 # ksw2
-$(KSW2_DIR)/ksw2_extz2_sse.o: $(KSW2_DIR)/ksw2_extz2_sse.c $(KSW2_DIR)/ksw2.h
-	$(CC) -c $(CFLAGS) $(KSW2_SIMD_FLAG) $(INCLUDE) $< -o $@
-
-$(KSW2_DIR)/ksw2_gg2_sse.o: $(KSW2_DIR)/ksw2_gg2_sse.c $(KSW2_DIR)/ksw2.h
-	$(CC) -c $(CFLAGS) $(KSW2_SIMD_FLAG) $(INCLUDE) $< -o $@
+$(KSW2_DIR)/ksw2_extz2.o: $(KSW2_DIR)/ksw2_extz2.c $(KSW2_DIR)/ksw2.h
+	$(CC) -c $(CFLAGS) $(INCLUDE) $< -o $@
 
 #$(SRC_DIR)/abpoa_cons.o: $(SRC_DIR)/abpoa_cons.c $(ABPOA)
 #	$(CC) -c $(CFLAGS) $< -I $(ABPOA_INCLUDE) $(INCLUDE) -o $@

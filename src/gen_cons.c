@@ -181,9 +181,9 @@ void seqs_msa(int seq_len, uint8_t *bseq, int par_n, int *par_pos, tandem_seq_t 
             for (i = 0; i < par_n-1; ++i) {
                 if (par_pos[i] >= 0 && par_pos[i+1] >= 0) {
                     start = par_pos[i], end = par_pos[i+1];
-                    printf(">seqs_%d:%d-%d\n", end-start, start, end);
-                    for (j = start+1; j <= end; ++j) printf("%c", "ACGTN"[bseq[j]]);
-                    printf("\n");
+                    fprintf(stderr, ">seqs_%d:%d-%d\n", end-start, start, end);
+                    for (j = start; j < end; ++j) fprintf(stderr, "%c", "ACGTN"[bseq[j]]);
+                    fprintf(stderr, "\n");
                 }
             }
         }
@@ -208,17 +208,17 @@ void seqs_msa(int seq_len, uint8_t *bseq, int par_n, int *par_pos, tandem_seq_t 
                     double ave_match = 0; int start, end, len, iden_n;
                     for (k = i; k < j-1; ++k) {
                         start = par_pos[k]; end = par_pos[k+1]; len = end - start;
-                        iden_n = ksw2_global(bseq+start+1, len, cons_bseq, cons_len);
+                        iden_n = ksw2_global(bseq+start, len, cons_bseq, cons_len);
                         // printf("%d %d, %d\n", iden_n, len, cons_len);
                         ave_match += (iden_n * 100 / (len+0.0));
                     }
                     for (s = 0; s < cons_len; ++s) cons_seq[s] = "ACGTN"[cons_bseq[s]]; cons_seq[cons_len] = '\0';
 
                     int max_q, max_t, cons_start, cons_end; double copy_num = n_seqs;
-                    ksw2_left_ext(cons_bseq, cons_len, bseq, par_pos[i]+1, &max_q, &max_t); cons_start = par_pos[i] - max_t;
+                    ksw2_left_ext(cons_bseq, cons_len, bseq, par_pos[i], &max_q, &max_t); cons_start = par_pos[i]-1 - max_t;
                     // printf("max_q: %d, max_t: %d\n", max_q, max_t);
                     copy_num += (max_q + 1.0) / cons_len;
-                    ksw2_right_ext(cons_bseq, cons_len, bseq+par_pos[j-1]+1, seq_len-par_pos[j-1]-1, &max_q, &max_t); cons_end = par_pos[j-1] + max_t + 1;
+                    ksw2_right_ext(cons_bseq, cons_len, bseq+par_pos[j-1], seq_len-par_pos[j-1], &max_q, &max_t); cons_end = par_pos[j-1] + max_t;
                     // printf("max_q: %d, max_t: %d\n", max_q, max_t);
                     copy_num += (max_q + 1.0) / cons_len;
                     // find full-length sequence based on 5' and 3' adapter sequences
@@ -253,7 +253,7 @@ void seqs_msa(int seq_len, uint8_t *bseq, int par_n, int *par_pos, tandem_seq_t 
                             full_length = 1;
                         }
 #ifdef __DEBUG__
-                        printf("FOR: %d, %d => %d, %d\n", tar_start, tar_end, _5_ed, _3_ed);
+                        fprintf(stderr, "FOR: %d, %d => %d, %d\n", tar_start, tar_end, _5_ed, _3_ed);
 #endif
                         if (tot_ed == 0) goto WRITE_CONS;
                         // |---plus-3'adapter---|---target-sequence---|---minus-5'adapter---|
@@ -275,7 +275,7 @@ REV:
                                 full_length = 2;
                             }
 #ifdef __DEBUG__
-                            printf("REV: %d, %d => %d\n", tar_start, tar_end, _5_ed + _3_ed);
+                            fprintf(stderr, "REV: %d, %d => %d\n", tar_start, tar_end, _5_ed + _3_ed);
 #endif
                         }
 WRITE_CONS:

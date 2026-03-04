@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <inttypes.h>
 #include <string.h>
 #include <getopt.h>
 #include <pthread.h>
@@ -16,7 +17,7 @@ const char CONTACT[30] = "gaoy1@chop.edu";
 const struct option mini_tandem_opt [] = {
 	{ "kmer-length", 1, NULL, 'k' },
 	{ "window-size", 1, NULL, 'w' },
-	{ "HPC-kmer", 0, NULL, 'H' },
+	// { "HPC-kmer", 0, NULL, 'H' },
 
 	{ "min-copy", 1, NULL, 'c' },
 	{ "max-diverg", 1, NULL, 'e' },
@@ -79,7 +80,7 @@ static int usage(void)
 	err_printf("    -k --kmer-length INT    k-mer length (no larger than %d) [%d]\n", MAX_KMER_SIZE, KMER_SIZE);
 	err_printf("    -w --window-size INT    window size, set as >1 to enable minimizer seeding [%d]\n", KMER_WSIZE);
 	// err_printf("    -s --step-size   INT    step size [%d]\n", KMER_SSIZE);
-	err_printf("    -H --HPC-kmer           use homopolymer-compressed k-mer [False]\n");
+	// err_printf("    -H --HPC-kmer           use homopolymer-compressed k-mer [False]\n");
 
 	//err_printf("\n");
 
@@ -103,10 +104,10 @@ static int usage(void)
     err_printf("                            - convex (default): min{\e[4mO1\e[0m+\e[4mg\e[0m*\e[4mE1\e[0m, \e[4mO2\e[0m+\e[4mg\e[0m*\e[4mE2\e[0m}\n");
     err_printf("                            - affine (set \e[4mO2\e[0m as 0): \e[4mO1\e[0m+\e[4mg\e[0m*\e[4mE1\e[0m\n");
     err_printf("                            - linear (set \e[4mO1\e[0m as 0): \e[4mg\e[0m*\e[4mE1\e[0m\n");
-	err_printf("  Adapter sequence:\n");
-	err_printf("    -5 --five-prime  STR    5' adapter sequence (sense strand) [NULL]\n");
-	err_printf("    -3 --three-prime STR    3' adapter sequence (anti-sense strand) [NULL]\n");
-	err_printf("    -a --ada-mat-rat FLT    minimum match ratio of adapter sequence [%.2f]\n", ADA_MATCH_RAT);
+	err_printf("  Flanking/adapter sequence:\n");
+	err_printf("    -5 --five-prime  STR    5' flanking/adapter sequence (sense strand) [NULL]\n");
+	err_printf("    -3 --three-prime STR    3' flanking/adapter sequence (anti-sense strand) [NULL]\n");
+	err_printf("    -a --ada-mat-rat FLT    minimum match ratio of flanking/adapter sequence [%.2f]\n", ADA_MATCH_RAT);
 
 	//err_printf("\n");
 
@@ -220,15 +221,15 @@ void mini_tandem_output(int n_seqs, kseq_t *read_seq, tandem_seq_t *tseq, mini_t
             if (mtp->only_unit) {
                 if (mtp->out_fmt == FASTA_FMT) { // >readName_repN_subX
                     for (i = 0; i < _tseq->pos_n[cons_i]-1; ++i) {
-                        fprintf(mtp->cons_out, ">%s_rep%d_sub%d\n", (read_seq+seq_i)->name.s, cons_i, i);
-                        for (j = _tseq->sub_pos[cons_i][i]+1; j <= _tseq->sub_pos[cons_i][i+1]; ++j) 
+                        fprintf(mtp->cons_out, ">%s_rep%d_sub%d %d_%d_%d\n", (read_seq+seq_i)->name.s, cons_i, i, _tseq->sub_pos[cons_i][i+1]-_tseq->sub_pos[cons_i][i], _tseq->sub_pos[cons_i][i]+1, _tseq->sub_pos[cons_i][i+1]);
+                        for (j = _tseq->sub_pos[cons_i][i]; j < _tseq->sub_pos[cons_i][i+1]; ++j) 
                             fprintf(mtp->cons_out, "%c", (read_seq+seq_i)->seq.s[j]);
                         fprintf(mtp->cons_out, "\n");
                     }
                 } else if (mtp->out_fmt == TAB_FMT) {
                     for (i = 0; i < _tseq->pos_n[cons_i]-1; ++i) {
-                        fprintf(mtp->cons_out, "%s\trep%d\tsub%d\t", (read_seq+seq_i)->name.s, cons_i, i);
-                        for (j = _tseq->sub_pos[cons_i][i]+1; j <= _tseq->sub_pos[cons_i][i+1]; ++j) 
+                        fprintf(mtp->cons_out, "%s\trep%d\tsub%d\t%d\t%d\t%d\t", (read_seq+seq_i)->name.s, cons_i, i, _tseq->sub_pos[cons_i][i+1]-_tseq->sub_pos[cons_i][i], _tseq->sub_pos[cons_i][i]+1, _tseq->sub_pos[cons_i][i+1]);
+                        for (j = _tseq->sub_pos[cons_i][i]; j < _tseq->sub_pos[cons_i][i+1]; ++j) 
                             fprintf(mtp->cons_out, "%c", (read_seq+seq_i)->seq.s[j]);
                         fprintf(mtp->cons_out, "\n");
                     }
@@ -236,19 +237,19 @@ void mini_tandem_output(int n_seqs, kseq_t *read_seq, tandem_seq_t *tseq, mini_t
             } else {
                 if (mtp->out_fmt == FASTA_FMT) { // >readName_repN_copyNum readLen_start_end_consLen_aveMatchRatio_fullLength_subPos
                     fprintf(mtp->cons_out, ">%s_rep%d_%.1f %d_%d_%d_%d_%.1f_%d_", (read_seq+seq_i)->name.s, cons_i, _tseq->copy_num[cons_i], (int)((read_seq+seq_i)->seq.l),  _tseq->cons_start[cons_i]+1, _tseq->cons_end[cons_i]+1, _tseq->cons_len[cons_i], _tseq->ave_match[cons_i], _tseq->full_length[cons_i]);
-                    fprintf(mtp->cons_out, "%d", _tseq->sub_pos[cons_i][0]+2);
-                    for (i = 1; i < _tseq->pos_n[cons_i]-1; ++i) fprintf(mtp->cons_out, ",%d", _tseq->sub_pos[cons_i][i]+2);
-                    fprintf(mtp->cons_out, ",%d\n", _tseq->sub_pos[cons_i][i]+1);
+                    fprintf(mtp->cons_out, "%d", _tseq->sub_pos[cons_i][0]+1);
+                    for (i = 1; i < _tseq->pos_n[cons_i]-1; ++i) fprintf(mtp->cons_out, ",%d", _tseq->sub_pos[cons_i][i]+1);
+                    fprintf(mtp->cons_out, ",%d\n", _tseq->sub_pos[cons_i][i]);
                 } else if (mtp->out_fmt == TAB_FMT || mtp->out_fmt == TAB_QUAL_FMT) { // readName/repN/readLen/start/end/consLen/copyNum/aveMatchRatio/fullLength
                     fprintf(mtp->cons_out, "%s\trep%d\t%.1f\t%d\t%d\t%d\t%d\t%.1f\t%d\t", (read_seq+seq_i)->name.s, cons_i, _tseq->copy_num[cons_i], (int)((read_seq+seq_i)->seq.l),  _tseq->cons_start[cons_i]+1, _tseq->cons_end[cons_i]+1, _tseq->cons_len[cons_i], _tseq->ave_match[cons_i], _tseq->full_length[cons_i]);
-                    fprintf(mtp->cons_out, "%d", _tseq->sub_pos[cons_i][0]+2);
-                    for (i = 1; i < _tseq->pos_n[cons_i]-1; ++i) fprintf(mtp->cons_out, ",%d", _tseq->sub_pos[cons_i][i]+2);
-                    fprintf(mtp->cons_out, ",%d\t", _tseq->sub_pos[cons_i][i]+1);
+                    fprintf(mtp->cons_out, "%d", _tseq->sub_pos[cons_i][0]+1);
+                    for (i = 1; i < _tseq->pos_n[cons_i]-1; ++i) fprintf(mtp->cons_out, ",%d", _tseq->sub_pos[cons_i][i]+1);
+                    fprintf(mtp->cons_out, ",%d\t", _tseq->sub_pos[cons_i][i]);
                 } else if (mtp->out_fmt == FASTQ_FMT) {
                     fprintf(mtp->cons_out, "@%s_rep%d_%.1f %d_%d_%d_%d_%.1f_%d_", (read_seq+seq_i)->name.s, cons_i, _tseq->copy_num[cons_i], (int)((read_seq+seq_i)->seq.l),  _tseq->cons_start[cons_i]+1, _tseq->cons_end[cons_i]+1, _tseq->cons_len[cons_i], _tseq->ave_match[cons_i], _tseq->full_length[cons_i]);
-                    fprintf(mtp->cons_out, "%d", _tseq->sub_pos[cons_i][0]+2);
-                    for (i = 1; i < _tseq->pos_n[cons_i]-1; ++i) fprintf(mtp->cons_out, ",%d", _tseq->sub_pos[cons_i][i]+2);
-                    fprintf(mtp->cons_out, ",%d\n", _tseq->sub_pos[cons_i][i]+1);
+                    fprintf(mtp->cons_out, "%d", _tseq->sub_pos[cons_i][0]+1);
+                    for (i = 1; i < _tseq->pos_n[cons_i]-1; ++i) fprintf(mtp->cons_out, ",%d", _tseq->sub_pos[cons_i][i]+1);
+                    fprintf(mtp->cons_out, ",%d\n", _tseq->sub_pos[cons_i][i]);
                 }
                 cons_seq_end += (tseq+seq_i)->cons_len[cons_i];
                 for (i = cons_seq_start; i < cons_seq_end; ++i)  
@@ -440,7 +441,7 @@ int main(int argc, char *argv[])
 	mini_tandem_para *mtp = mini_tandem_init_para();
 	int c, op_idx=0; char *s; double x, realtime0 = realtime();
 
-	while ((c = getopt_long(argc, argv, "k:w:m:Hhvc:e:p:P:M:X:E:O:5:3:a:o:ur:qslFf:t:", mini_tandem_opt, &op_idx)) >= 0) {
+	while ((c = getopt_long(argc, argv, "k:w:m:hvc:e:p:P:M:X:E:O:5:3:a:o:ur:qslFf:t:", mini_tandem_opt, &op_idx)) >= 0) {
 		switch(c)
 		{
             case 'h': return usage();
@@ -448,13 +449,13 @@ int main(int argc, char *argv[])
 
 			case 'k': mtp->k = atoi(optarg); 
 			          if (mtp->k > MAX_KMER_SIZE) {
-			          	  err_printf("\n[main] Error: k-mer length can not be larger than %d (%ld).\n", MAX_KMER_SIZE, mtp->k);
+			          	  fprintf(stderr, "\n[main] Error: k-mer length can not be larger than %d %" PRIi64 ".\n", MAX_KMER_SIZE, mtp->k);
 			          	  goto End;
 				      }
 				      break;
 			case 'w': mtp->w = atoi(optarg); break;
 			// case 's': mtp->s = atoi(optarg); break;
-			case 'H': mtp->hpc = 1; break;
+			// case 'H': mtp->hpc = 1; break;
 
 			case 'c': mtp->min_copy = atoi(optarg); 
 					  if (mtp->min_copy < MIN_COPY) {
@@ -465,13 +466,13 @@ int main(int argc, char *argv[])
 			case 'e': mtp->max_div = atof(optarg); break;
 			case 'p': mtp->min_p = th_parse_num(optarg);
 					  if (mtp->min_p < MIN_PERIOD) {
-						  err_printf("Error: -p --min-period needs to be >= %u. (%ld)\n", MIN_PERIOD, mtp->min_p); 
+						  err_printf("Error: -p --min-period needs to be >= %u. (%" PRIi64 ")\n", MIN_PERIOD, mtp->min_p); 
 						  goto End;
 					  }
 					  break;
 			case 'P': mtp->max_p = th_parse_num(optarg); 
 					  if (mtp->max_p > MAX_PERIOD) {
-						  err_printf("Error: -P --max-period needs to be <= %u. (%ld)\n", MAX_PERIOD, mtp->max_p); 
+						  err_printf("Error: -P --max-period needs to be <= %u. (%" PRIi64 ")\n", MAX_PERIOD, mtp->max_p); 
 						  goto End;
 					  }
 					  break;

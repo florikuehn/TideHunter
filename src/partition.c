@@ -15,13 +15,13 @@ int *partition_seqs_core(char *seq, int seq_len, int8_t *hit_array, int est_peri
     for (i = 0; i < seq_len; ++i) {
         if (hit_array[i]) {
             #ifdef __DEBUG__
-            printf("%d, ", i);
+            fprintf(stderr, "%d, ", i);
             #endif
             pos_array[hit_n++] = i;
         }
     } 
 #ifdef __DEBUG__
-    printf("\n");
+    fprintf(stderr, "\n");
 #endif
     // partition seq into period seperated seqs
     int par_i = 0, l; 
@@ -145,7 +145,7 @@ int *get_partition_pos_with_global_alignment(uint8_t *bseq, int seq_len, dp_t **
                 // do global alignment
                 iden_n = ksw2_global_with_cigar(bseq+s1-k+1, s2-s1+k, bseq+e1-k+1, e2-e1+k, &n_cigar, &cigar);
                 #ifdef __DEBUG__
-                printf("iden_n: %d (%d,%d), (%d,%d)\n", iden_n, e2-e1+k, s2-s1+k, s1, s2);
+                fprintf(stderr, "iden_n: %d (%d,%d), (%d,%d)\n", iden_n, e2-e1+k, s2-s1+k, s1, s2);
                 #endif
                 if (iden_n >= MIN_OF_TWO(s2-s1+k, e2-e1+k) * (1-mtp->max_div)) {
                     e = e2 - ksw2_backtrack_left_end(n_cigar, cigar, s2-s1+k, e2-e1+k, s2-e1);
@@ -164,6 +164,24 @@ int *get_partition_pos_with_global_alignment(uint8_t *bseq, int seq_len, dp_t **
         }
     }
     if (*par_n == 0) free(par_pos);
+    return par_pos;
+}
+
+// find upstream anchor (s1, e1) and downstream (s2, e2)
+// global alignment of [s1,s2] and [e1, e2]
+// find best partition position by backtracking
+
+// left extension: find S
+// <=<=<=<=<=<=<=<=<=<=<=<=<=<=<=<=<=<=<=
+// --s1---S---s2----e1---s---e2-------e--
+// --|---------| vs |---------|----------
+int *get_partition_pos_with_extend_alignment(uint8_t *bseq, int seq_len, dp_t **dp, chain_t ch, mini_tandem_para *mtp, int *n_par_pos) {
+    int est_ch_i = ch.est_ch_i, est_start = ch.est_start, est_period = ch.est_period;
+    int first_end = dp[ch.cell[0].i][ch.cell[0].j].end, last_start = dp[ch.cell[ch.len-1].i][ch.cell[ch.len-1].j].start;
+    int *par_pos = (int*)_err_malloc(seq_len * sizeof(int)); *n_par_pos = 0;
+    int i, j, k=mtp->k, ch_i, s, e, s1, e1, s2, e2, iden_n;
+    int n_cigar; uint32_t *cigar;
+    cell_t c; dp_t d;
     return par_pos;
 }
 
@@ -199,8 +217,8 @@ int *get_partition_pos_with_narrow_global_alignment(uint8_t *bseq, int seq_len, 
                 // do global alignment
                 iden_n = ksw2_global_with_cigar(bseq+e1-k+1, e2-e1+k, bseq+s1-k+1, s2-s1+k, &n_cigar, &cigar);
                 #ifdef __DEBUG__
-                printf("1: (%d,%d), 2: (%d,%d)\n", s1, e1, s2, e2);
-                printf("iden_n: %d (%d,%d), (%d,%d)\n", iden_n, e2-e1+k, s2-s1+k, s1, s2);
+                fprintf(stderr, "1: (%d,%d), 2: (%d,%d)\n", s1, e1, s2, e2);
+                fprintf(stderr, "iden_n: %d (%d,%d), (%d,%d)\n", iden_n, e2-e1+k, s2-s1+k, s1, s2);
                 #endif
                 if (iden_n >= MIN_OF_TWO(s2-s1+k, e2-e1+k) * (1-mtp->max_div)) { // extend partition
                     e = s; s = s2 - ksw2_backtrack_left_end(n_cigar, cigar, e2-e1+k, s2-s1+k, e2-s);
@@ -248,8 +266,8 @@ int *get_partition_pos_with_narrow_global_alignment(uint8_t *bseq, int seq_len, 
                 // if (s2 - e < k) // overlapped
                 iden_n = ksw2_global_with_cigar(bseq+s1-k+1, s2-s1+k, bseq+e1-k+1, e2-e1+k, &n_cigar, &cigar);
                 #ifdef __DEBUG__
-                printf("1: (%d,%d), 2: (%d,%d)\n", s1, e1, s2, e2);
-                printf("iden_n: %d (%d,%d), (%d,%d)\n", iden_n, e2-e1+k, s2-s1+k, s1, s2);
+                fprintf(stderr, "1: (%d,%d), 2: (%d,%d)\n", s1, e1, s2, e2);
+                fprintf(stderr, "iden_n: %d (%d,%d), (%d,%d)\n", iden_n, e2-e1+k, s2-s1+k, s1, s2);
                 #endif
                 if (iden_n >= MIN_OF_TWO(s2-s1+k, e2-e1+k) * (1-mtp->max_div)) {
                     s = e; e = e2 - ksw2_backtrack_left_end(n_cigar, cigar, s2-s1+k, e2-e1+k, s2-e);

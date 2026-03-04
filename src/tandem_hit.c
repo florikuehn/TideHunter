@@ -46,11 +46,11 @@ int direct_hash(uint8_t *bseq, int seq_len, int k, int use_hpc, hash_t *h) {
         if (use_hpc) while (pos+1 < seq_len && bseq[pos+1] == c) ++pos;
         key = key << 2 | c;
         if (++l >= k) { // get a kmer
-            key &= mask; h[hi++] = ((hash_t)key << 32) | pos;
+            key &= mask; h[hi++] = ((hash_t)key << 32) | (pos-k+1);
         }
     }
 #ifdef __DEBUG__
-    for (c = 0; c < hi; ++c) printf("%u: %u\n", (uint32_t)h[c], (uint32_t)(h[c]>>32));
+    for (c = 0; c < hi; ++c) fprintf(stderr, "%u: %u\n", (uint32_t)h[c], (uint32_t)(h[c]>>32));
 #endif
     return hi;
 }
@@ -94,6 +94,7 @@ static inline int tq_shift(tiny_queue_t *q)
 // w:       window size (s>=w, non-overlap window)
 // use_hpc: use homopolymer-compressed kmer
 // h:       kmer-key | rightmost-pos
+// h:       kmer-key | leftmost-pos (05012025 by Yan Gao: no HPC, so that we can store the leftmost pos)
 int minimizer_hash(uint8_t *bseq, int seq_len, int k, int w, int use_hpc, hash_t *h) {
 	int i, j, l, c, hi=0, kmer_span=0, buf_pos, min_pos;
     uint32_t key=0, mask = (1ULL << 2*k) - 1;
@@ -118,7 +119,8 @@ int minimizer_hash(uint8_t *bseq, int seq_len, int k, int w, int use_hpc, hash_t
             key = (key << 2 | c) & mask;
             ++l;
             if (l >= k && kmer_span < 256) {
-                info.x = key; info.y = i;
+                // info.x = key; info.y = i;
+                info.x = inv_hash32(key); info.y = i - k + 1;
             }
         } else l = 0, tq.count = tq.front = 0, kmer_span = 0, key = 0;
         buf[buf_pos] = info;
@@ -150,13 +152,13 @@ int minimizer_hash(uint8_t *bseq, int seq_len, int k, int w, int use_hpc, hash_t
     }
     if (min.x != UINT32_MAX) h[hi++] = ((hash_t)min.x << 32) | min.y;
 #ifdef __DEBUG__
-    for (i = 0; i < hi; ++i) printf("%u: %u\n", (uint32_t)h[i], (uint32_t)(h[i]>>32));
+    for (i = 0; i < hi; ++i) fprintf(stderr, "%u: %u\n", (uint32_t)h[i], (uint32_t)(h[i]>>32));
 #endif
     return hi;
 
 }
 
-// h: kmer-key | rightmost-pos
+// h: kmer-key | rightmost-pos of kmer
 int build_kmer_hash(uint8_t *bseq, int seq_len, mini_tandem_para *mtp, hash_t *h) {
     if (mtp->w > 1) { // do min hash
         return minimizer_hash(bseq, seq_len, mtp->k, mtp->w, mtp->hpc, h);
@@ -197,7 +199,7 @@ int collect_hash_hit(hash_t *h, int hn, uint32_t min_p, uint32_t max_p, hash_t *
                         (*hash_hit)[hi] = _set_hash_hit(h[start_i+j] & _32mask, p);
                         ++hi;
 #ifdef __DEBUG__
-                        printf("p: %u, end: %lu, start: %lu\n", p, h[start_i+j] & _32mask, h[start_i+j-1] & _32mask);
+                        fprintf(stderr, "p: %u, end: %lu, start: %lu\n", p, h[start_i+j] & _32mask, h[start_i+j-1] & _32mask);
 #endif
                     } else --hit_n;
                 }
@@ -215,7 +217,7 @@ int collect_hash_hit(hash_t *h, int hn, uint32_t min_p, uint32_t max_p, hash_t *
                 (*hash_hit)[hi] = _set_hash_hit(h[start_i+j] & _32mask, p);
                 ++hi;
 #ifdef __DEBUG__
-                printf("p: %u, end: %lu, start: %lu\n", p, h[start_i+j] & _32mask, h[start_i+j-1] & _32mask);
+                fprintf(stderr, "p: %u, end: %lu, start: %lu\n", p, h[start_i+j] & _32mask, h[start_i+j-1] & _32mask);
 #endif
             } else --hit_n;
         }
@@ -229,7 +231,7 @@ int collect_tandem_repeat_hit(uint8_t *bseq, int seq_len, mini_tandem_para *mtp,
     int hn; hash_t *h = (hash_t*)_err_malloc((seq_len - mtp->w) * sizeof(hash_t));
     if ((hn = build_kmer_hash(bseq, seq_len, mtp, h)) == 0) return 0;
 #ifdef __DEBUG__
-    printf("hash seed number: %d\n", hn);
+    fprintf(stderr, "hash seed number: %d\n", hn);
 #endif
     // collect hash hits
     int hit_n = collect_hash_hit(h, hn, (uint32_t)mtp->min_p, (uint32_t)mtp->max_p, hit_h); free(h);

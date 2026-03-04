@@ -37,11 +37,19 @@ int tidehunter_core(kseq_t *read_seq, tandem_seq_t *tseq, mini_tandem_para *mtp,
     for (ch_i = 0; ch_i < ch_n; ++ch_i) {
         // partition seq into segments
         ch = chain[ch_i];
-        int par_n, *par_pos;
-        par_pos = get_partition_pos_with_narrow_global_alignment(bseq, seq_len, dp, ch, mtp, &par_n);
-        if (par_n < mtp->min_copy+1) free(par_pos);// not enough copies
+        int n_par, *par_pos;
+        par_pos = get_partition_pos_with_narrow_global_alignment(bseq, seq_len, dp, ch, mtp, &n_par);
+    #ifdef __DEBUG__
+        for (i = 0; i < n_par; ++i) {
+            fprintf(stderr, "%d, ", par_pos[i]);
+        } fprintf(stderr, "\n");
+    #endif
+        // XXX TODO: partition based on extension alignment result, so that cons/unit would start from the begining of the repeat
+        // int n_par_pos;
+        // int *par_pos = get_partition_pos_with_extend_alignment(bseq, seq_len, dp, ch, mtp, &n_par_pos);
+        if (n_par < mtp->min_copy+1) free(par_pos);// not enough copies
         else {
-            seqs_msa(seq_len, bseq, par_n, par_pos, tseq, mtp, ab, abpt); // msa and generate consensus 
+            seqs_msa(seq_len, bseq, n_par, par_pos, tseq, mtp, ab, abpt); // msa and generate consensus 
         }
     }
     free(bseq);
