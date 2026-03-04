@@ -228,7 +228,7 @@ void mini_tandem_output(int n_seqs, kseq_t *read_seq, tandem_seq_t *tseq, mini_t
                 } else if (mtp->out_fmt == TAB_FMT) {
                     for (i = 0; i < _tseq->pos_n[cons_i]-1; ++i) {
                         fprintf(mtp->cons_out, "%s\trep%d\tsub%d\t", (read_seq+seq_i)->name.s, cons_i, i);
-                        for (j = _tseq->sub_pos[cons_i][i]+1; j < _tseq->sub_pos[cons_i][i+1]; ++j) 
+                        for (j = _tseq->sub_pos[cons_i][i]+1; j <= _tseq->sub_pos[cons_i][i+1]; ++j) 
                             fprintf(mtp->cons_out, "%c", (read_seq+seq_i)->seq.s[j]);
                         fprintf(mtp->cons_out, "\n");
                     }
