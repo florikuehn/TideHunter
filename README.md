@@ -38,8 +38,8 @@ TideHunter ./test_data/test_50x4.fa > cons.fa
   - [Introduction](#introduction)
   - [Installation](#installation)
     - [Installing TideHunter via conda](#installing-tidehunter-via-conda)
+    - [Pre-built binary executable file for Linux/Mac OS](#pre-built-binary-executable-file-for-linuxmac-os)
     - [Building TideHunter from source files](#building-tidehunter-from-source-files)
-    - [Pre-built binary executable file for Linux/Unix](#pre-built-binary-executable-file-for-linuxunix)
   - [Getting started with toy example in `test_data`](#getting-started-with-toy-example-in-test_data)
   - [Usage](#usage)
       - [To generate consensus sequences in FASTA format](#to-generate-consensus-sequences-in-fasta-format)
@@ -48,7 +48,6 @@ TideHunter ./test_data/test_50x4.fa > cons.fa
       - [To generate full-length consensus sequences](#to-generate-full-length-consensus-sequences)
       - [To generate unit sequences in FASTA format](#to-generate-unit-sequences-in-fasta-format)
       - [To generate unit sequences in tabular format](#to-generate-unit-sequences-in-tabular-format)
-  - [Commands and options](#commands-and-options)
   - [Input](#input)
     - [Adapter sequence](#adapter-sequence)
   - [Output](#output)
@@ -76,6 +75,18 @@ On Linux/Unix and Mac OS, TideHunter can be installed via
 conda install -c bioconda tidehunter
 ```
 
+### <a name="binary"></a>Pre-built binary executable file for Linux/Mac OS
+Linux x86_64:
+```
+wget https://github.com/yangao07/TideHunter/releases/download/v1.5.6/TideHunter-v1.5.6_x64-linux.tar.gz
+tar -zxvf TideHunter-v1.5.6_x64-linux.tar.gz
+```
+Mac OS arm64:
+```
+wget https://github.com/yangao07/TideHunter/releases/download/v1.5.6/TideHunter-v1.5.6_arm64-macos.tar.gz
+tar -zxvf TideHunter-v1.5.6_arm64-macos.tar.gz
+```
+
 ### <a name="build"></a>Building TideHunter from source files
 You can also build TideHunter from source files.
 Make sure you have gcc (>=6.4.0) and zlib installed before compiling.
@@ -85,20 +96,6 @@ from the [release page](https://github.com/yangao07/TideHunter/releases).
 wget https://github.com/yangao07/TideHunter/releases/download/v1.5.6/TideHunter-v1.5.6.tar.gz
 tar -zxvf TideHunter-v1.5.6.tar.gz
 cd TideHunter-v1.5.6; make
-```
-Or, you can use `git clone` command to download the source code. 
-Don't forget to include the `--recursive` to download the codes of [abPOA](https://github.com/yangao07/abPOA).
-This gives you the latest version of TideHunter, which might be still under development.
-```
-git clone --recursive https://github.com/yangao07/TideHunter.git
-cd TideHunter; make
-```
-
-### <a name="binary"></a>Pre-built binary executable file for Linux/Unix 
-If you meet any compiling issue, please try the pre-built binary file:
-```
-wget https://github.com/yangao07/TideHunter/releases/download/v1.5.6/TideHunter-v1.5.6_x64-linux.tar.gz
-tar -zxvf TideHunter-v1.5.6_x64-linux.tar.gz
 ```
 
 ## <a name="start"></a>Getting started with toy example in `test_data`
@@ -130,59 +127,6 @@ TideHunter -u ./test_data/test_1000x10.fa > unit.fa
 #### <a name="tab_unit"></a>To generate unit sequences in tabular format
 ```
 TideHunter -u -f 2 ./test_data/test_1000x10.fa > unit.out
-```
-## <a name="cmd"></a>Commands and options
-```
-Usage:   TideHunter [options] in.fa/fq > cons.fa
-
-Options:
-  Seeding:
-    -k --kmer-length INT    k-mer length (no larger than 16) [8]
-    -w --window-size INT    window size, set as >1 to enable minimizer seeding [1]
-    -H --HPC-kmer           use homopolymer-compressed k-mer [False]
-  Tandem repeat criteria:
-    -c --min-copy    INT    minimum copy number of tandem repeat (>=2) [2]
-    -e --max-diverg  INT    maximum allowed divergence rate between two consecutive repeats [0.25]
-    -p --min-period  INT    minimum period size of tandem repeat (>=2) [30]
-    -P --max-period  INT    maximum period size of tandem repeat (<=4294967295) [10K]
-  Scoring parameters for partial order alignment:
-    -M --match    INT       match score [2]
-    -X --mismatch INT       mismatch penalty [4]
-    -O --gap-open INT(,INT) gap opening penalty (O1,O2) [4,24]
-    -E --gap-ext  INT(,INT) gap extension penalty (E1,E2) [2,1]
-                            TideHunter provides three gap penalty modes, cost of a g-long gap:
-                            - convex (default): min{O1+g*E1, O2+g*E2}
-                            - affine (set O2 as 0): O1+g*E1
-                            - linear (set O1 as 0): g*E1
-  Adapter sequence:
-    -5 --five-prime  STR    5' adapter sequence (sense strand) [NULL]
-    -3 --three-prime STR    3' adapter sequence (anti-sense strand) [NULL]
-    -a --ada-mat-rat FLT    minimum match ratio of adapter sequence [0.80]
-  Output:
-    -o --output      STR    output file [stdout]
-    -m --min-len     INT    only output consensus sequence with min. length of [30]
-    -r --min-cov  FLOAT|INT only output consensus sequence with at least R supporting units for all bases: [0.00]
-                            if r is fraction: R = r * total copy number
-                            if r is integer: R = r
-    -u --unit-seq           only output unit sequences of each tandem repeat, no consensus sequence [False]
-    -l --longest            only output consensus sequence of tandem repeat that covers the longest read sequence [False]
-    -F --full-len           only output full-length consensus sequence. [False]
-                            full-length: consensus sequence contains both 5' and 3' adapter sequence
-                            *Note* only effective when -5 and -3 are provided.
-    -s --single-copy        output additional single-copy full-length consensus sequence. [False]
-                            *Note* only effective when -F is set and -5 and -3 are provided.
-    -f --out-fmt     INT    output format [1]
-                            - 1: FASTA
-                            - 2: Tabular
-                            - 3: FASTQ
-                            - 4: Tabular with quality score
-                              for [3] and [4], qualiy score of each base represents the ratio of the consensus coverage to the # total copies.
-  Computing resource:
-    -t --thread      INT    number of threads to use [4]
-
-  General options:
-    -h --help               print this help usage information
-    -v --version            show version number
 ```
 
 ## <a name="input_output"></a>Input
