@@ -11,7 +11,7 @@
 #include "kseq.h"
 
 const char PROG[20] = "TideHunter";
-const char VERSION[20] = "1.5.5";
+const char VERSION[20] = "1.5.6";
 const char CONTACT[30] = "gaoy1@chop.edu";
 
 const struct option mini_tandem_opt [] = {
