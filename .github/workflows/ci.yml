@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    name: ${{ matrix.os }} / ${{ matrix.arch }}
+    runs-on: ${{ matrix.runner }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: Linux
+            arch: x86_64
+            runner: ubuntu-latest
+          - os: Linux
+            arch: arm64
+            runner: ubuntu-24.04-arm
+          - os: macOS
+            arch: x86_64
+            runner: macos-13
+          - os: macOS
+            arch: arm64
+            runner: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install dependencies (Linux)
+        if: matrix.os == 'Linux'
+        run: sudo apt-get install -y zlib1g-dev
+
+      - name: Build
+        run: make
+
+      - name: Test
+        run: ./bin/TideHunter test_data/test_50x4.fa > /dev/null
